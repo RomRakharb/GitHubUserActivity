@@ -1,11 +1,13 @@
-use std::collections::HashMap;
+use reqwest::header::{ACCEPT, AUTHORIZATION};
+use std::env;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let resp = reqwest::get("https://httpbin.org/ip")
-        .await?
-        .json::<HashMap<String, String>>()
-        .await?;
-    println!("{resp:#?}");
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = env::args().collect();
+    let username = args.get(1).unwrap();
+
+    let body = reqwest::blocking::get(format!("https://api.github.com/users/{}/events", username))?
+        .text()?;
+
+    println!("body = {body:?}");
     Ok(())
 }
