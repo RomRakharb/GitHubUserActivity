@@ -1,6 +1,6 @@
 # GitHub User ACTIVITY
 
-*This is my second project in [roadmap.sh's Backend Roadmap] (https://roadmap.sh/projects/github-user-activity) series.*
+*This is my second project in [roadmap.sh's Backend Roadmap](https://roadmap.sh/projects/github-user-activity) series.*
 
 ## How to use
 
