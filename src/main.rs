@@ -2,7 +2,7 @@ use reqwest::header::{HeaderMap, ACCEPT, AUTHORIZATION, USER_AGENT};
 use serde_json::Value;
 use std::env;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 
 enum Action {
     Get(String),
@@ -13,15 +13,17 @@ fn get_token() -> std::io::Result<String> {
     let mut token = String::new();
     let mut file = File::open("token")?;
     file.read_to_string(&mut token)?;
+    token = token.trim_end_matches('\n').to_string();
     Ok(token)
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut args = env::args();
-    let username = args.nth(1).unwrap();
-    let binding = get_token()?;
-    let token = binding.trim_end_matches('\n');
+fn set_token(token: String) -> std::io::Result<()> {
+    let mut file = File::create("token")?;
+    file.write_all(token.as_bytes())?;
+    Ok(())
+}
 
+fn get_activity(username: String, token: String) -> Result<String, Box<dyn std::error::Error>> {
     let mut headers = HeaderMap::new();
     headers.insert(ACCEPT, "application/vnd.github+json".parse()?);
     headers.insert(AUTHORIZATION, format!("Bearer {token}").parse()?);
@@ -35,16 +37,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .headers(headers)
         .send()?;
 
-    if response.status().is_success() {
-        let body: Value = serde_json::from_str(response.text().unwrap().as_str())?;
-        if let Some(each) = body.as_array() {
-            println!("{:?}", each);
-        }
-        // println!("{:?}", body);
-    } else {
-        println!("Error: {}", response.status());
-        let error_body = response.text()?;
-        println!("Response body: {}", error_body);
+    Ok(response.text()?)
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut args = env::args();
+    let mut response = String::new();
+    match args.nth(1) {
+        Some(arg) => match arg.as_str() {
+            "token" => set_token(args.nth(2).unwrap_or_default())?,
+            _ => response = get_activity(arg, get_token()?)?,
+        },
+        None => {}
     }
+
     Ok(())
 }
